@@ -1,0 +1,50 @@
+<launch>
+    <!-- AirSim ROS Wrapper -->
+    <node name="airsim_node" pkg="airsim_ros_pkgs" type="airsim_node" output="screen">
+        <param name="is_vulkan" type="bool" value="false" />
+        <param name="publish_clock" type="bool" value="false" />
+
+        <!-- Vehicle name in settings.json -->
+        <param name="vehicle_name" type="string" value="Drone1" />
+
+        <!-- Update rates (Hz) -->
+        <param name="update_airsim_control_every_n_sec" type="double" value="0.01" />  <!-- 100 Hz -->
+        <param name="update_airsim_img_response_every_n_sec" type="double" value="0.033" />  <!-- ~30 Hz -->
+
+        <!-- Coordinate frames -->
+        <param name="world_frame_id" type="string" value="world" />
+        <param name="odom_frame_id" type="string" value="odom" />
+        <param name="vehicle_frame_id" type="string" value="base_link" />
+    </node>
+
+    <!-- Topic Bridge: AirSim to YOPO Interface -->
+    <node name="airsim_yopo_bridge" pkg="airsim_ros_pkgs" type="airsim_yopo_bridge.py" output="screen">
+        <!-- AirSim topics (input) -->
+        <param name="airsim_odom_topic" type="string" value="/airsim_node/Drone1/odom_local_ned" />
+        <param name="airsim_imu_topic" type="string" value="/airsim_node/Drone1/imu/Imu" />
+        <param name="airsim_depth_topic" type="string" value="/airsim_node/Drone1/depth_cam/DepthPlanar" />
+
+        <!-- YOPO topics (output) -->
+        <param name="yopo_odom_topic" type="string" value="/sim/odom" />
+        <param name="yopo_imu_topic" type="string" value="/sim/imu" />
+        <param name="yopo_depth_topic" type="string" value="/depth_image" />
+    </node>
+
+    <!-- Control Command Bridge: YOPO to AirSim -->
+    <node name="yopo_airsim_control_bridge" pkg="airsim_ros_pkgs" type="yopo_airsim_control_bridge.py" output="screen">
+        <!-- YOPO control topic (input) -->
+        <param name="yopo_ctrl_topic" type="string" value="/so3_control/pos_cmd" />
+
+        <!-- AirSim control topic (output) -->
+        <param name="airsim_ctrl_topic" type="string" value="/airsim_node/Drone1/vel_cmd_body_frame" />
+        <param name="airsim_pose_topic" type="string" value="/airsim_node/Drone1/pose_cmd_body_frame" />
+
+        <!-- Control mode: "velocity" or "position" -->
+        <param name="control_mode" type="string" value="position" />
+    </node>
+
+    <!-- Static TF: world -> odom (if needed) -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="world_odom_broadcaster"
+          args="0 0 0 0 0 0 world odom" />
+
+</launch>
